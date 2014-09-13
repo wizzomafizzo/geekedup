@@ -1,6 +1,37 @@
 (in-package :geekedup)
 
-;; public commands
+(defvar *commands* '(("say" cmd-say nil)
+					 ("add" cmd-new-factoid nil)
+					 ("seen" cmd-seen nil)
+					 ("grab" cmd-grab-quote nil)
+					 ("quote" cmd-quote nil)
+					 ("rq" cmd-random-quote nil)
+					 ("ping" cmd-ping nil)
+					 ("checkrss" cmd-check-rss t)
+					 ("ignore" cmd-ignore t)
+					 ("mkadmin" cmd-make-admin t)
+					 ("mknormal" cmd-make-normal t)
+					 ("join" cmd-join t)
+					 ("part" cmd-part t)
+					 ("quit" cmd-quit t)
+					 ("restart" cmd-restart t)))
+
+(defun lookup-cmd (name)
+  (cdr (assoc name *commands* :test #'string-equal)))
+
+(defun cmd-join (message)
+  (let ((channel (cmd-args message)))
+	(list 'join channel)))
+
+(defun cmd-part (message)
+  (let ((channel (cmd-args message)))
+	(list 'part channel)))
+
+(defun cmd-quit (message)
+  (if message '(quit)))
+
+(defun cmd-restart (message)
+  (if message '(restart)))
 
 (defun cmd-ignore (message)
   (let ((nick (cmd-args message)))

@@ -1,6 +1,9 @@
 (in-package :geekedup)
 
-;; rss parsing
+(defvar *rss-feeds* '("http://www.reddit.com/r/Hiphopcirclejerk/new/.rss?limit=3"
+					  "http://www.reddit.com/r/kramacourt/new/.rss?limit=3"))
+(defvar *last-rss-check* 0)
+(defvar *rss-check-interval* (* 60 15))
 
 ; TODO: handle bad connection/invalid rss data
 

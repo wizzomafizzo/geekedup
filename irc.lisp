@@ -1,11 +1,17 @@
 (in-package :geekedup)
 
+;; TODO: use full lists instead of cons
+(defvar *config* '((server . "irc.freenode.net")
+				   (nick . "bitchimightbe__")
+				   (join . "##wizzo")
+				   (quit-msg . "yeah he geeked up")
+				   (command-prefix . #\,)))
+
+(defvar *connection* nil)
+
 ; specific reply to a user
 (defun format-reply (nick msg)
   (format nil "~a: ~a" nick msg))
-
-(defun lookup-cmd (name)
-  (cdr (assoc name *commands* :test #'string-equal)))
 
 (defun format-quote (nick msg)
   (concatenate 'string "<" nick "> " msg))
@@ -72,15 +78,23 @@
 (defun cmd-args (message)
   (cdr (parse-cmd (message-msg message))))
 
-; (say/join/part/quit/reconnect/do data)
+;; TODO: CTCP action
 (defun process-cmd (privmsg message)
   (if (and (equal (config 'command-prefix) (char (message-msg message) 0))
 		 (not (user-ignored? (message-nick message))))
-	  (let ((response (run-cmd message)))
-		(cond ((eq (car response) 'say)
-			   (cl-irc:privmsg (cl-irc:connection privmsg)
-							   (message-channel message)
-							   (string (cadr response))))))))
+	  (let* ((response (run-cmd message))
+			 (cmd-type (car response)))
+		(cond ((eq cmd-type 'say) (cl-irc:privmsg (cl-irc:connection privmsg)
+												  (message-channel message)
+												  (string (cadr response))))
+			  ((eq cmd-type 'join) (cl-irc:join (cl-irc:connection privmsg)
+												(string (cadr response))))
+			  ((eq cmd-type 'part) (cl-irc:part (cl-irc:connection privmsg)
+												(string (cadr response))))
+			  ((eq cmd-type 'quit) (cl-irc:quit *connection* (config 'quit-msg)))
+			  ((eq cmd-type 'restart) (progn
+										(cl-irc:quit *connection* "brb lol")
+										(run-bot)))))))
 
 ; main hook for all cl-irc privmsg
 (defun process-msg (privmsg)
@@ -95,9 +109,14 @@
 					  (message-msg message))))
 
 (defun irc-message-logger (message)
-  (let ((log-file (concatenate 'string "./" (car (cl-irc:arguments message)) ".log")))
-	(with-open-file (stream log-file :direction :output :if-exists :append)
-	  (format stream "~a ~a" (cl-irc:received-time message) (cl-irc:raw-message-string message)))))
+  (let ((log-file (format nil "./~a.log" (car (cl-irc:arguments message)))))
+	(with-open-file (s log-file
+					   :direction :output
+					   :if-exists :append
+					   :if-does-not-exist :create)
+	  (format s "~a ~a~%"
+			  (cl-irc:received-time message)
+			  (cl-irc:raw-message-string message)))))
 
 ; clear and add all custom cl-irc hooks
 (defun setup-hooks ()

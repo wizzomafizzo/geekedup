@@ -1,6 +1,6 @@
-;;; database
-
 (in-package :geekedup)
+
+(defvar *db* (sqlite:connect "geekedup.db"))
 
 (defmacro db-non-query (&rest body)
   `(sqlite:execute-non-query *db* ,@body))
